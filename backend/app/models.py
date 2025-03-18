@@ -35,9 +35,4 @@ class Order(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String, unique=True, index=True)  # Unique order number
-    order_date = Column(DateTime, default=datetime.now)  # Date of order
-    status = Column(Enum(OrderStatusEnum), default=OrderStatusEnum.PENDING)  # Order status
-    item_id = Column(Integer, ForeignKey("items.id"))  # Foreign key to item (shoe)
-    
-    # Relationship to item (shoe)
-    item = relationship("Item")
+    order_images = Column(String) #url for images

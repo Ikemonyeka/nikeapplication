@@ -45,6 +45,11 @@ class ItemCreate(BaseModel):
     price: float
     gender: str
 
+# Pydantic model for input validation
+class OrderCreate(BaseModel):
+    order_number: str
+    order_image: str
+
 # Stream response generator (for AI recommendation)
 async def stream_response(query: str, products: str):
     # Get recommendation from LangChain agent
@@ -106,13 +111,13 @@ def get_items_for_query(db: Session):
 
 # Endpoint for creating a new order (for testing purposes)
 @app.post("/create-order/")
-async def create_order(order_number: str, item_id: int, db: Session = Depends(get_db)):
+async def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     # Create new order in the database
-    order = Order(order_number=order_number, item_id=item_id)
+    order = Order(order_number=order.order_number, order_images=order.order_image)
     db.add(order)
     db.commit()
     db.refresh(order)
-    return {"order_number": order.order_number, "status": order.status.value}
+    return {"order_number": order.order_number, "message": "order stored successfully"}
 
 @app.post("/items/")
 async def create_item(item: ItemCreate, db: Session = Depends(get_db)):
