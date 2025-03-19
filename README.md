@@ -1,3 +1,7 @@
+Postgres DB is used for this project:
+-replace connection string in database.py
+-replcae the sqlalchemy.url with your connection string in the alembic.ini file
+
 To Setup Backend
 run:
 
@@ -17,11 +21,11 @@ alembic upgrade head
 
 uvicorn backend.app.main:app --reload  
 
-
-Frontend
+Frontend Setup
 run:
-
+npm install
 npm install @mui/material @emotion/react @emotion/styled   
 npm install @mui/icons-material  
 npm install react-router-dom   
 npm start 
+Note: you should be in the NIKEAPPLICATION\frontend\nike-react-app when running commands
