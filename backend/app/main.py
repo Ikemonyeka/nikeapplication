@@ -6,9 +6,19 @@ from .embeddinghelper import generate_embedding
 from .recommendation_engine import recommend_items
 from .schemas import OrderCreate, ItemCreate, QueryInput
 from .ai_agent_4o import extract_order_numbers_gpt, check_order_status_with_vision, classify_intent, handle_general_talk
+from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Allow all origins (not recommended for production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # This allows all domains
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Dependency to get DB session
 def get_db():

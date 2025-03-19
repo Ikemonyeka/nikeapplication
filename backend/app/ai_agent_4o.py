@@ -116,7 +116,7 @@ def classify_intent(user_message: str):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Classify the user's intent into one of the following categories: 'General Talk', 'Recommendation', 'Order Status', 'None'. Please only return one of these categories based on the user's message."},
+                {"role": "system", "content": "Classify the user's intent into one of the following categories: 'General Talk', 'Recommendation', 'Order Status', 'None'. Please only return one of these categories based on the user's message. Note: a user saying they want to buy shoes without specifying what type of shoes is too broad to classify as 'Recommendation' rather leave it to 'general talk'"},
                 {"role": "user", "content": user_message}
             ]
         )
@@ -136,7 +136,7 @@ def handle_general_talk(user_message: str):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a support agent your role is to serve as an introductor, you can reply with to initial messages and find out how you can help customers nothing more and nothing less"},
+                {"role": "system", "content": "You are a support agent your role is to serve as an introductor, you can reply to initial messages and find out how you can help customers and reply to basic messages like thank you, nothing more and nothing less e.g(customer: Hi, introductor: Hello, how can i help you or customer: i want some shoes, introductor: What would type of shoes are you looking for  )"},
                 {"role": "user", "content": user_message}
             ]
         )
