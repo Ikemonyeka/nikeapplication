@@ -1,28 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import select
-from fastapi.responses import StreamingResponse
-from .database import SessionLocal, engine
-from .models import Item, Order, OrderStatusEnum  # Updated to use correct models
-from langchain.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-import asyncio
-from langchain.schema import HumanMessage, AIMessage, BaseMessage
-import logging
+from .database import SessionLocal
+from .models import Item, Order
 from .embeddinghelper import generate_embedding
-from pydantic import BaseModel
-import json
 from .recommendation_engine import recommend_items
+from .schemas import OrderCreate, ItemCreate, QueryInput
+from .ai_agent_4o import extract_order_numbers_gpt, check_order_status_with_vision, classify_intent, handle_general_talk
 
 # Initialize FastAPI app
 app = FastAPI()
-
-# Initialize LangChain agent (OpenAI)
-llm = ChatOpenAI(model="gpt-4o-mini")
-prompt_template = "Given the following products, which ones match best the query: {query}. Products: {products}"
-prompt = PromptTemplate(input_variables=["query", "products"], template=prompt_template)
-llm_chain = LLMChain(llm=llm, prompt=prompt)
 
 # Dependency to get DB session
 def get_db():
@@ -31,83 +17,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# Pydantic model for the user input
-class QueryInput(BaseModel):
-    query: str
-
-# Pydantic model for input validation
-class ItemCreate(BaseModel):
-    name: str
-    description: str
-    category: str
-    image_url: str
-    price: float
-    gender: str
-
-# Pydantic model for input validation
-class OrderCreate(BaseModel):
-    order_number: str
-    order_image: str
-
-# Stream response generator (for AI recommendation)
-async def stream_response(query: str, products: str):
-    # Get recommendation from LangChain agent
-    result = llm_chain.run({"query": query, "products": products})
-    
-    # Break the result into words and yield them one by one
-    for word in result.split():
-        yield word + " "
-        await asyncio.sleep(0.1)  # Slight delay to simulate streaming
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-
-@app.get("/recommend-old")
-async def recommend(query: str = Query(..., min_length=1, description="User's query for recommendations")):
-    if not query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-
-    logging.info(f"Received recommendation request: {query}")
-    
-    input_messages = [HumanMessage(content=query)]
-    
-    def generate_response():
-        try:
-            for chunk in llm.stream(input_messages):  # ✅ Pass messages directly
-                if isinstance(chunk, AIMessage) and chunk.content:
-                    yield chunk.content  # ✅ Stream valid response chunks
-        except Exception as e:
-            logging.error(f"Error generating response: {e}")
-            yield "An error occurred while processing your request."
-
-    return StreamingResponse(generate_response(), media_type="text/plain")
-# Endpoint for checking order status
-@app.get("/order-status/{order_number}")
-async def order_status(order_number: str, db: Session = Depends(get_db)):
-    # Query the order by order_number
-    order = db.query(Order).filter(Order.order_number == order_number).first()
-    
-    if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
-    
-    # Get order status and related item details
-    item = db.query(Item).filter(Item.id == order.item_id).first()
-    order_details = {
-        "order_number": order.order_number,
-        "status": order.status.value,
-        "item_name": item.name,
-        "item_category": item.category,
-        "item_price": item.price,
-        "item_image": item.image_url
-    }
-    
-    return order_details
-
-# Helper function to query items for AI agent from the database
-def get_items_for_query(db: Session):
-    items = db.query(Item).all()
-    return items
 
 # Endpoint for creating a new order (for testing purposes)
 @app.post("/create-order/")
@@ -142,9 +51,10 @@ async def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     return {"message": "Item created successfully", "item": new_item}
 
 @app.post("/recommendations/")
-async def get_recommendations(input_data: QueryInput, db: Session = Depends(get_db)):
-    user_query = input_data.query
-    recommended_items = recommend_items(user_query, db)
+async def get_recommendations(input_data: str, db: Session = Depends(get_db)):
+
+    #user_query = input_data.query
+    recommended_items = recommend_items(input_data, db)
     
     # Prepare the response in a friendly format
     recommendations = [
@@ -152,4 +62,123 @@ async def get_recommendations(input_data: QueryInput, db: Session = Depends(get_
         for item in recommended_items
     ]
     
-    return {"query": user_query, "recommendations": recommendations}
+    return {"query": input_data, "recommendations": recommendations}
+
+# FastAPI route for checking order status
+@app.post("/get-order/")
+async def get_order(user_message: str, db: Session = Depends(get_db)):
+    # Step 1: Extract order number from the user's message (only one order at a time)
+    order_numbers = extract_order_numbers_gpt(user_message)
+    if not order_numbers:
+        raise HTTPException(status_code=400, detail="No valid order number found in the message")
+
+    # Step 2: Retrieve the order from the database based on extracted order number
+    order_number = order_numbers[0]  # We're only handling one order at a time
+    order = db.query(Order).filter(Order.order_number == order_number).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="No matching order found")
+
+    # Step 3: Evaluate the order using GPT-4o-mini Vision and get status message directly
+    status_message = check_order_status_with_vision(order.order_images, user_message)
+
+    # Step 4: Return the response directly from GPT-4o-mini's result
+    return {
+        "order_number": order.order_number,
+        "order_images": order.order_images,
+        "status": status_message
+    }
+
+
+@app.post("/ai-agent/")
+async def agent(user_message: str, db: Session = Depends(get_db)):
+    intent = classify_intent(user_message)
+
+    if "General Talk" in intent:
+        return handle_general_talk(user_message)
+    elif "Recommendation" in intent:
+        return await get_recommendations(user_message, db)
+    elif "Order Status" in intent:
+        return await get_order(user_message, db)
+    else:
+        return "Sorry, I couldn't understand your request. Could you please clarify?"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# @app.post("/get-order/")
+# async def get_order(user_message: str, db: Session = Depends(get_db)):
+#     # Extract order numbers using GPT-4o-mini
+#     order_numbers = extract_order_numbers_gpt(user_message)
+#     print(order_numbers)
+    
+#     if not order_numbers:
+#         raise HTTPException(status_code=400, detail="No valid order number found in the message")
+    
+#     # Retrieve orders from the database
+#     orders = db.query(Order).filter(Order.order_number.in_(order_numbers)).all()
+    
+#     # Create a dictionary of the found orders for easier access
+#     orders_dict = {order.order_number: order for order in orders}
+    
+#     # Prepare the result list
+#     result = []
+    
+#     for order_number in order_numbers:
+#         # If order exists in the database, add it to the result
+#         if order_number in orders_dict:
+#             order = orders_dict[order_number]
+#             result.append({
+#                 "order_number": order.order_number,
+#                 "order_images": order.order_images
+#             })
+#         else:
+#             # If order doesn't exist, add it with null for order_images
+#             result.append({
+#                 "order_number": order_number,
+#                 "order_images": None
+#             })
+    
+#     return result
+
+
+# @app.get("/recommend-old")
+# async def recommend(query: str = Query(..., min_length=1, description="User's query for recommendations")):
+#     if not query.strip():
+#         raise HTTPException(status_code=400, detail="Query cannot be empty")
+
+#     logging.info(f"Received recommendation request: {query}")
+    
+#     input_messages = [HumanMessage(content=query)]
+    
+#     def generate_response():
+#         try:
+#             for chunk in llm.stream(input_messages):  # ✅ Pass messages directly
+#                 if isinstance(chunk, AIMessage) and chunk.content:
+#                     yield chunk.content  # ✅ Stream valid response chunks
+#         except Exception as e:
+#             logging.error(f"Error generating response: {e}")
+#             yield "An error occurred while processing your request."
+
+#     return StreamingResponse(generate_response(), media_type="text/plain")
