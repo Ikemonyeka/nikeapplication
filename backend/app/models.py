@@ -7,15 +7,6 @@ from .database import Base
 
 Base = declarative_base()
 
-# Enum for order status
-class OrderStatusEnum(enum.Enum):
-    PENDING = "Pending"
-    SHIPPED = "Shipped"
-    DELIVERED = "Delivered"
-    RETURNED = "Returned"
-    REFUNDED = "Refunded"
-    ESCALATED = "Escalated"
-
 # Item Model: For storing shoe information
 class Item(Base):
     __tablename__ = "items"

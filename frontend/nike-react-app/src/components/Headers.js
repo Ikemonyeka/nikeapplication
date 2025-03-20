@@ -10,6 +10,7 @@ export default function Headers() {
     const [chatOpen, setChatOpen] = useState(true);
     const [messages, setMessages] = useState([{ sender: "ai", text: "👋 Hi! How can I assist you today?" }]);
     const [inputText, setInputText] = useState("");
+    const [loading, setLoading] = useState(false); // Loading state for preloader
     const chatEndRef = useRef(null);
 
     useEffect(() => {
@@ -21,63 +22,57 @@ export default function Headers() {
 
     const handleSendMessage = async () => {
         if (inputText.trim() === "") return;
-    
+
         const userMessage = { sender: "user", text: inputText };
         setMessages((prev) => [...prev, userMessage]);
+
+        setLoading(true); // Set loading to true
+        setMessages((prev) => [...prev, { sender: "ai", text: "..." }]); // Show preloader
+
         const API_BASE_URL = "http://127.0.0.1:8000";
-    
+
         try {
             const response = await fetch(`${API_BASE_URL}/ai-agent/?user_message=${encodeURIComponent(inputText)}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}) // Empty body since we pass the message in the query string
+                body: JSON.stringify({})
             });
-    
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-    
+
             const data = await response.json();
-            console.log("API Response:", data); // Log the entire response for debugging
-    
-            // Handle the response when it's a string (simple response)
+            console.log("API Response:", data);
+
+            setMessages((prev) => prev.slice(0, -1)); // Remove the "..." message
+
             if (typeof data === "string") {
                 setMessages((prev) => [...prev, { sender: "ai", text: data }]);
-            } 
-            // Handle the response with recommendations
-            else if (data.recommendations) {
+            } else if (data.recommendations) {
                 const recommendationText = data.recommendations
-                    .map(item => `${item.name} - ${item.category} - $${item.price}`)
-                    .join("<br />"); // Use HTML <br /> to break the line
-    
+                    .map(item => `${item.name} - $${item.price}`)
+                    .join("<br />");
+
                 setMessages((prev) => [...prev, { sender: "ai", text: recommendationText }]);
-            } 
-            // Handle the order status response
-            else if (data.order_images && data.order_number && data.status) {
-                const orderImage = data.order_images;
-                const orderStatus = data.status;
-                const orderNumber = data.order_number;
-    
+            } else if (data.order_images && data.order_number && data.status) {
                 const orderMessage = `
-                    <strong>Order #${orderNumber}</strong><br />
-                    <img src="${orderImage}" alt="Order Image" style="max-width: 100%; height: auto; margin-top: 10px;" /><br />
-                    <strong>Status:</strong> ${orderStatus}
+                    <strong>Order #${data.order_number}</strong><br />
+                    <img src="${data.order_images}" alt="Order Image" style="max-width: 100%; height: auto; margin-top: 10px;" /><br />
+                    <strong>Status:</strong> ${data.status}
                 `;
                 setMessages((prev) => [...prev, { sender: "ai", text: orderMessage }]);
-            } 
-            // Handle the case where there's no expected response format
-            else {
+            } else {
                 setMessages((prev) => [...prev, { sender: "ai", text: "Unexpected response from server" }]);
             }
         } catch (error) {
             console.error("Error fetching AI response:", error);
             setMessages((prev) => [...prev, { sender: "ai", text: "Error fetching response. Try again." }]);
         }
-    
+
+        setLoading(false); // Set loading to false
         setInputText("");
     };
-    
-    
 
     return (
         <>
@@ -124,7 +119,6 @@ export default function Headers() {
                         <Box sx={{ flex: 1, p: 2, overflowY: "auto", display: "flex", flexDirection: "column", gap: 1, maxWidth: "100%", wordWrap: "break-word" }}>
                             {messages.map((msg, index) => (
                                 <Box key={index} sx={{ alignSelf: msg.sender === "user" ? "flex-end" : "flex-start", bgcolor: msg.sender === "user" ? "#f04a00" : "#e0e0e0", color: msg.sender === "user" ? "white" : "black", borderRadius: "8px", p: 1.5, maxWidth: "75%" }}>
-                                    {/* If it's AI message, render HTML content for recommendations, otherwise plain text */}
                                     {msg.sender === "ai" && msg.text.includes("<br />") ? (
                                         <span dangerouslySetInnerHTML={{ __html: msg.text }} />
                                     ) : (
@@ -144,10 +138,6 @@ export default function Headers() {
                     </Paper>
                 </Box>
             </Modal>
-
-            <Button onClick={toggleChat} sx={{ position: "fixed", bottom: "20px", right: "20px", backgroundColor: "#f04a00", color: "white", borderRadius: "50%", width: "50px", height: "50px", minWidth: "unset", boxShadow: "0px 4px 6px rgba(0,0,0,0.2)", "&:hover": { backgroundColor: "#d93d00" } }}>
-                <ChatIcon />
-            </Button>
         </>
     );
 }

@@ -84,6 +84,7 @@ def check_order_status_with_vision(order_image: str, user_message: str):
                 If no defects are visible or the issue requires additional context beyond what's in the image, let the user know you will escalate to human customer support you do not need to provide a full explaination.
                 Maintain Nike's brand voice while providing clear, concise analysis and recommendations. Focus on customer satisfaction while following
                 company policies for returns and exchanges.).
+                Any issue should be treated as internal and you should not look to the customer for assistance.
                 """},
             {"role": "user", "content": content},
         ]

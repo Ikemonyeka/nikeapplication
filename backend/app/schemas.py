@@ -37,4 +37,4 @@ class ItemCreate(BaseModel):
 # Pydantic model for input validation
 class OrderCreate(BaseModel):
     order_number: str
-    order_image: str
+    order_images: str

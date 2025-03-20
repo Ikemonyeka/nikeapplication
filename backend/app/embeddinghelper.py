@@ -5,13 +5,13 @@ import json
 # Ensure you have your OpenAI API key in your environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def generate_embedding(description: str, price: float, category: str):
+def generate_embedding(description: str, price: float, category: str, gender: str):
     """
     Generate an embedding for the combined fields: description, price, and category.
     """
     try:
         # Combine fields into one string
-        combined_text = f"Description: {description}, Price: {price}, Category: {category}"
+        combined_text = f"Description: {description}, Price: {price}, Category: {category}, Gender: {gender}"
         print(f"Generating embedding for: {combined_text}")  # Debugging output
 
         # NEW API CALL FORMAT
