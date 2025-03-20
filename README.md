@@ -1,60 +1,51 @@
 [
-
-Ensure that you have an OPENAI_API_KEY and LANGCHAIN_API_KEY stored in your environment variables as this will be used through the project
-
-]
-
-[
-
 Postgres DB is used for this project:
 
 -replace connection string in database.py
 
--replcae the sqlalchemy.url with your connection string in the alembic.ini file
+-replcae the sqlalchemy.url variable with your connection string in the alembic.ini file
+]
+
+[
 
 To Setup Backend
 
 run:
 
-python -m venv venv
+Note: your location must be "your_system_path/NIKEAPPLICATION/"
+First, you want remove the current venv file:
+	Remove-Item -Recurse -Force venv
+Second, create it again:
+	python -m venv venv
+Third, activate the env:
+	.\venv\Scripts\Activate
+Fourth, install all packages by running:
+	pip install -r requirements.txt
 
-venv\Scripts\activate   	
+Note: your location must be "your_system_path/NIKEAPPLICATION/backend"
+Fifth, ensure no pending migrations:
+	alembic stamp head
+Sixth, create the migration for the models:
+	alembic revision --autogenerate -m "create tables"
+Seventh, create the tables in the database specified:
+	alembic upgrade head
 
-pip install -r requirements.txt
-
-pip install fastapi[all] "uvicorn[standard]"  
-
-pip install langchain
-
-pip install langchain_community
-
-pip install openai
-
-alembic revision --autogenerate -m "Create items, orders, and users tables" //This will create a model of the table  
-
-alembic upgrade head // This will create the tables in your specified database
-
-uvicorn backend.app.main:app --reload  //This must be executed from "your_system_path}/nikeapplication/" path. When you run this all the data needed to test the application will be seeded into your postgres database to test the application. 
-
+Note: your location must be "your_system_path/NIKEAPPLICATION/"
+Eight, start the backend of the application:
+	uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	the url should be: http://127.0.0.1:8000/docs
 ]
 
-
 [
-
 Frontend Setup
 
-run:
+Note: you should be in the NIKEAPPLICATION\frontend\nike-react-app
 
 npm install
 
-npm install @mui/material @emotion/react @emotion/styled   
-
-npm install @mui/icons-material  
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material    
 
 npm install react-router-dom   
 
 npm start 
-
-Note: you should be in the NIKEAPPLICATION\frontend\nike-react-app when running commands
-
 ]
