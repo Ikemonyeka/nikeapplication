@@ -1,3 +1,4 @@
+[
 Postgres DB is used for this project:
 
 -replace connection string in database.py
@@ -27,7 +28,10 @@ alembic revision --autogenerate -m "Create items, orders, and users tables" //Th
 alembic upgrade head // This will create the tables in your specified database
 
 uvicorn backend.app.main:app --reload  //This must be executed from "your_system_path}/nikeapplication/" path. When you run this all the data needed to test the application will be seeded into your postgres database to test the application. 
+]
 
+
+[
 Frontend Setup
 
 run:
@@ -43,3 +47,4 @@ npm install react-router-dom
 npm start 
 
 Note: you should be in the NIKEAPPLICATION\frontend\nike-react-app when running commands
+]
