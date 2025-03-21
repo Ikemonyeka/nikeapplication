@@ -4,3 +4,8 @@ sqlalchemy
 psycopg2
 alembic
 pydantic
+fastapi[all]
+uvicorn[standard]
+langchain
+langchain_community
+openai

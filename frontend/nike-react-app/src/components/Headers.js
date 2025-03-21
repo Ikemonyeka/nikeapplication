@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemText, Box, Button, Modal, Paper } from "@mui/material";
+import { AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemText, Box, Button, Modal, Paper, Fab } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChatIcon from "@mui/icons-material/Chat";
 import CloseIcon from "@mui/icons-material/Close";
@@ -10,7 +10,7 @@ export default function Headers() {
     const [chatOpen, setChatOpen] = useState(true);
     const [messages, setMessages] = useState([{ sender: "ai", text: "👋 Hi! How can I assist you today?" }]);
     const [inputText, setInputText] = useState("");
-    const [loading, setLoading] = useState(false); // Loading state for preloader
+    const [loading, setLoading] = useState(false); 
     const chatEndRef = useRef(null);
 
     useEffect(() => {
@@ -26,8 +26,8 @@ export default function Headers() {
         const userMessage = { sender: "user", text: inputText };
         setMessages((prev) => [...prev, userMessage]);
 
-        setLoading(true); // Set loading to true
-        setMessages((prev) => [...prev, { sender: "ai", text: "..." }]); // Show preloader
+        setLoading(true); 
+        setMessages((prev) => [...prev, { sender: "ai", text: "..." }]); 
 
         const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -45,7 +45,7 @@ export default function Headers() {
             const data = await response.json();
             console.log("API Response:", data);
 
-            setMessages((prev) => prev.slice(0, -1)); // Remove the "..." message
+            setMessages((prev) => prev.slice(0, -1));
 
             if (typeof data === "string") {
                 setMessages((prev) => [...prev, { sender: "ai", text: data }]);
@@ -70,7 +70,7 @@ export default function Headers() {
             setMessages((prev) => [...prev, { sender: "ai", text: "Error fetching response. Try again." }]);
         }
 
-        setLoading(false); // Set loading to false
+        setLoading(false); 
         setInputText("");
     };
 
@@ -138,6 +138,13 @@ export default function Headers() {
                     </Paper>
                 </Box>
             </Modal>
+
+            {/* Floating Chat Icon */}
+            {!chatOpen && (
+                <Fab color="primary" sx={{ position: "fixed", bottom: 16, right: 16, bgcolor: "#f04a00", "&:hover": { bgcolor: "#d93d00" } }} onClick={toggleChat}>
+                    <ChatIcon />
+                </Fab>
+            )}
         </>
     );
 }
