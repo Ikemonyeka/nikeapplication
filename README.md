@@ -2,7 +2,7 @@
 
 Postgres DB is used for this project:
 
--replace connection string in database.py
+-replace connection string in database.py e.g "postgresql://postgres:2001@localhost/Nike_DB"
 
 -replcae the sqlalchemy.url variable with your connection string in the alembic.ini file
 ]
@@ -13,7 +13,7 @@ To Setup Backend
 
 run:
 
-Note: your location must be "your_system_path/NIKEAPPLICATION/"
+Note: your location must be "your_system_path/NIKEAPPLICATION/" for the next steps
 
 First, you want remove the current venv file:
 
@@ -30,7 +30,7 @@ Fourth, install all packages by running:
 
 	pip install -r requirements.txt
 
-Note: your location must be "your_system_path/NIKEAPPLICATION/backend"
+Note: your location must be "your_system_path/NIKEAPPLICATION/backend" for  the next steps
 
 Fifth, ensure no pending migrations:
 
